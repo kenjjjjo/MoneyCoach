@@ -60,6 +60,7 @@ export default function RootLayout() {
   const [queryClient] = useState(() => new QueryClient());
   const [trpcClient] = useState(() => createTRPCClient());
   const [isMobileView, setIsMobileView] = useState(true); // Web用のビュートグル状態
+  const [showToggleBtn, setShowToggleBtn] = useState(true); // 切替ボタン表示状態
 
   const appContent = (
     <trpc.Provider client={trpcClient} queryClient={queryClient}>
@@ -91,36 +92,66 @@ export default function RootLayout() {
           {appContent}
         </View>
 
-        {/* 画面切り替え用のフローティングボタン（右下に固定） */}
-        <Pressable
-          onPress={() => setIsMobileView(!isMobileView)}
-          style={({ pressed }) => [
-            {
+        {/* 画面切り替え用のフローティングボタン（右下に固定、×ボタンで非表示に可能） */}
+        {showToggleBtn && (
+          <View
+            style={{
               position: "absolute",
               bottom: 24,
               right: 24,
-              backgroundColor: "#22C55E",
-              paddingHorizontal: 16,
-              paddingVertical: 12,
-              borderRadius: 30,
               flexDirection: "row",
               alignItems: "center",
               gap: 8,
-              boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
               zIndex: 9999,
-            },
-            pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }
-          ]}
-        >
-          <MaterialIcons 
-            name={isMobileView ? "desktop-windows" : "smartphone"} 
-            size={24} 
-            color="#FFFFFF" 
-          />
-          <Text style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 14 }}>
-            {isMobileView ? "PCビューに切替" : "スマホビューに切替"}
-          </Text>
-        </Pressable>
+            }}
+          >
+            {/* メイン切り替えボタン */}
+            <Pressable
+              onPress={() => setIsMobileView(!isMobileView)}
+              style={({ pressed }) => [
+                {
+                  backgroundColor: "#22C55E",
+                  paddingHorizontal: 16,
+                  paddingVertical: 12,
+                  borderRadius: 30,
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 8,
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                },
+                pressed && { opacity: 0.8, transform: [{ scale: 0.95 }] }
+              ]}
+            >
+              <MaterialIcons 
+                name={isMobileView ? "desktop-windows" : "smartphone"} 
+                size={20} 
+                color="#FFFFFF" 
+              />
+              <Text style={{ color: "#FFFFFF", fontWeight: "600", fontSize: 13 }}>
+                {isMobileView ? "PCビュー" : "スマホビュー"}
+              </Text>
+            </Pressable>
+
+            {/* 非表示にするための「×」ボタン */}
+            <Pressable
+              onPress={() => setShowToggleBtn(false)}
+              style={({ pressed }) => [
+                {
+                  backgroundColor: "#EF4444",
+                  width: 32,
+                  height: 32,
+                  borderRadius: 16,
+                  justifyContent: "center",
+                  alignItems: "center",
+                  boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)",
+                },
+                pressed && { opacity: 0.8, transform: [{ scale: 0.9 }] }
+              ]}
+            >
+              <MaterialIcons name="close" size={18} color="#FFFFFF" />
+            </Pressable>
+          </View>
+        )}
       </View>
     );
   }

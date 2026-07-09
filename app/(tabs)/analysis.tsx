@@ -122,7 +122,7 @@ export default function AnalysisScreen() {
 
   // UI Components to render
   const summaryCard = (
-    <View style={[styles.summaryCard, { backgroundColor: colors.primary }]}>
+    <View style={[styles.summaryCard, { backgroundColor: "#1E293B" }]}>
       <Text style={styles.summaryCardMonth}>{monthLabel}</Text>
       <View style={styles.summaryCardRow}>
         <View style={styles.summaryCardLeft}>
