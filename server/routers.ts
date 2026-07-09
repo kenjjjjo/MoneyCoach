@@ -5,6 +5,7 @@ import { invokeLLM } from "./_core/llm";
 import { systemRouter } from "./_core/systemRouter";
 import { protectedProcedure, publicProcedure, router } from "./_core/trpc";
 import { generateTemplateResponse } from "../lib/ai/templateEngine";
+import { generateTemplateAnalysis } from "../lib/ai/analysisTemplate";
 import * as db from "./db";
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -121,7 +122,7 @@ export const appRouter = router({
       return { success: true };
     }),
 
-    // チャット（数字付き回答強化）
+    // チャット（Gemini API使用）
     chat: publicProcedure
       .input(
         z.object({
@@ -153,17 +154,47 @@ export const appRouter = router({
           recentExpenses,
         } = input;
 
-        const reply = generateTemplateResponse({
-          monthlyTotal,
-          budget,
-          remainingDays,
-          usagePercent,
-          categoryBreakdown,
-          userMessage: message
+        const categoryText = categoryBreakdown
+          .map((c) => `- ${CATEGORY_LABELS[c.category] || c.category}: ¥${c.total.toLocaleString()} (${c.percent}%)`)
+          .join("\n");
+
+        const expenseText = recentExpenses
+          .slice(0, 10)
+          .map((e) => `- ${e.date}: ${CATEGORY_LABELS[e.category] || e.category} ¥${e.amount.toLocaleString()}${e.memo ? ` (${e.memo})` : ""}`)
+          .join("\n");
+
+        const systemPrompt = `あなたは優秀なAI家計簿コーチ「MoneyCoach」です。
+ユーザーは家計について相談しています。以下のデータを参考にして、優しく具体的、かつ実践的なアドバイス（チャット形式）を行ってください。
+
+【今月の家計状況】
+- 今月の支出合計: ¥${monthlyTotal.toLocaleString()}
+- 予算: ¥${budget.toLocaleString()}
+- 残り予算: ¥${remainingBudget.toLocaleString()}
+- 今月残り日数: ${remainingDays}日
+- 今日の目標予算: ¥${todayBudget.toLocaleString()}
+- 月末着地予測: ¥${projectedTotal.toLocaleString()} (${projectedTotal > budget ? "予算超過見込み" : "予算内収まる見込み"})
+- 予算使用率: ${usagePercent}%
+
+【カテゴリ別支出内訳】
+${categoryText || "支出データがありません"}
+
+【最近の支出履歴（一部）】
+${expenseText || "支出データがありません"}
+
+【アドバイス方針】
+- ユーザーに寄り添う親しみやすい口調（〜ですよ、〜しましょうね、など）で回答してください。
+- 必要に応じて具体的な数字（目標金額、削れる額、残額など）を出して説明してください。
+- 150文字程度で簡潔に分かりやすく答えてください。`;
+
+        const response = await invokeLLM({
+          messages: [
+            { role: "system", content: systemPrompt },
+            { role: "user", content: message },
+          ],
         });
 
-        // テンプレートからの返答であることを明示する
-        return { reply: `[AIコーチ] ${reply}` };
+        const reply = response.choices?.[0]?.message?.content || "すみません、少し考え込んでしまいました。もう一度話しかけてみてください！";
+        return { reply };
       }),
 
     // 週次レポート生成
@@ -321,69 +352,19 @@ ${expenseText || "支出データがありません"}
         })
       )
       .mutation(async ({ input }) => {
-        const { currentMonth, monthlyTotal, budget, usagePercent, score, categoryBreakdown, recentExpenses } = input;
-
-        const topCategory = [...categoryBreakdown].sort((a, b) => b.total - a.total)[0];
-        const savedAmount = budget - monthlyTotal;
-
-        const categoryText = categoryBreakdown
-          .map((c) => `- ${CATEGORY_LABELS[c.category] || c.category}: ¥${c.total.toLocaleString()} (${c.percent}%)`)
-          .join("\n");
-
-        const systemPrompt = `あなたはMoneyCoachのAIアナリストです。支出データを分析し、簡潔なレポートを作成してください。
-
-【${currentMonth}の支出データ】
-- 支出合計: ¥${monthlyTotal.toLocaleString()}
-- 月予算: ¥${budget.toLocaleString()}
-- ${savedAmount >= 0 ? `節約額: ¥${savedAmount.toLocaleString()}` : `超過額: ¥${Math.abs(savedAmount).toLocaleString()}`}
-- 予算使用率: ${usagePercent}%
-- 支出スコア: ${score}点/100点
-- 最多支出: ${topCategory ? (CATEGORY_LABELS[topCategory.category] || topCategory.category) + "（" + topCategory.percent + "%）" : "なし"}
-
-【カテゴリ別内訳】
-${categoryText || "支出データがありません"}
-
-【出力形式】
-以下の構成でJSONを返してください：
-{
-  "summary": "今月の総評（1〜2文、金額を含む）",
-  "goodPoints": ["良い点1（具体的な金額）", "良い点2（具体的な金額）"],
-  "warningPoints": ["気をつけたい点1（具体的な金額・割合）", "気をつけたい点2"],
-  "suggestions": ["提案1（○%削減すると月¥○○節約）", "提案2", "提案3"]
-}`;
-
-        const response = await invokeLLM({
-          messages: [
-            { role: "system", content: systemPrompt },
-            { role: "user", content: "支出分析レポートをJSONで作成してください。" },
-          ],
-          response_format: { type: "json_object" },
+        const { currentMonth, monthlyTotal, budget, usagePercent, score, categoryBreakdown } = input;
+        
+        // 50のテンプレートパターンから最適かつランダムなものをローカルで高速生成（Geminiトークンゼロ）
+        const result = generateTemplateAnalysis({
+          currentMonth,
+          monthlyTotal,
+          budget,
+          usagePercent,
+          score,
+          categoryBreakdown,
         });
 
-        const rawContent = response.choices?.[0]?.message?.content;
-        let parsed = {
-          summary: "分析を完了しました。",
-          goodPoints: [] as string[],
-          warningPoints: [] as string[],
-          suggestions: [] as string[],
-        };
-
-        if (typeof rawContent === "string") {
-          try {
-            parsed = JSON.parse(rawContent);
-          } catch {
-            parsed.summary = rawContent;
-          }
-        }
-
-        return {
-          summary: parsed.summary ?? "",
-          goodPoints: parsed.goodPoints ?? [],
-          warningPoints: parsed.warningPoints ?? [],
-          suggestions: parsed.suggestions ?? [],
-          topCategory: topCategory?.category ?? null,
-          topCategoryPercent: topCategory?.percent ?? 0,
-        };
+        return result;
       }),
   }),
 });

@@ -338,6 +338,8 @@ function MonthlyReportView({
 // ---- メイン画面 ----
 export default function CoachScreen() {
   const colors = useColors();
+  // Web環境でキーボード回避ビューが入力欄を画面外へ追いやるバグを防ぐため、Web時は通常のViewを使用
+  const ChatContainer = Platform.OS === "web" ? View : KeyboardAvoidingView;
   const { state, getMonthlyExpenses, getMonthlyTotal, getCurrentMonthKey } = useExpenses();
   const [tabMode, setTabMode] = useState<TabMode>("chat");
   const [messages, setMessages] = useState<Message[]>([
@@ -549,10 +551,14 @@ export default function CoachScreen() {
       ) : tabMode === "monthly" ? (
         <MonthlyReportView colors={colors} />
       ) : (
-        <KeyboardAvoidingView
+        <ChatContainer
           style={styles.flex}
-          behavior={Platform.OS === "ios" ? "padding" : "height"}
-          keyboardVerticalOffset={0}
+          {...(Platform.OS !== "web"
+            ? {
+                behavior: Platform.OS === "ios" ? "padding" : "height",
+                keyboardVerticalOffset: Platform.OS === "ios" ? 90 : 0,
+              }
+            : {})}
         >
           <FlatList
             ref={flatListRef}
@@ -630,7 +636,7 @@ export default function CoachScreen() {
               <MaterialIcons name="send" size={20} color="#FFFFFF" />
             </Pressable>
           </View>
-        </KeyboardAvoidingView>
+        </ChatContainer>
       )}
     </ScreenContainer>
   );
