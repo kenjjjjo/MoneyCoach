@@ -30,10 +30,9 @@ const CATEGORY_LABELS: Record<string, string> = {
 function getConcreteSuggestions(cat: string, total: number, remainingDays: number, budget: number): string[] {
   const label = CATEGORY_LABELS[cat] || cat;
   
-  // カテゴリ別の具体的な節約行動テンプレート集（実際の数値から金額や回数を計算）
   switch (cat) {
     case "food": {
-      const eatOutCost = 1500; // 外食1回あたりの想定金額
+      const eatOutCost = 1500;
       const reduceCount = Math.max(1, Math.round(total * 0.15 / eatOutCost));
       const saved = reduceCount * eatOutCost;
       return [
@@ -43,7 +42,7 @@ function getConcreteSuggestions(cat: string, total: number, remainingDays: numbe
       ];
     }
     case "convenience": {
-      const drinkCost = 160; // コンビニドリンク1本あたり想定
+      const drinkCost = 160;
       const count = Math.max(2, Math.round(total * 0.35 / drinkCost));
       const saved = count * drinkCost;
       return [
@@ -96,136 +95,146 @@ function getConcreteSuggestions(cat: string, total: number, remainingDays: numbe
 
 // 50通りの超具体的なシナリオテンプレート
 const TEMPLATES = [
-  // -------------------------------------------------------------
-  // GROUP A: 予算にかなりの余裕がある健全家計 (usagePercent <= 50%) (15パターン)
-  // -------------------------------------------------------------
-  ...Array.from({ length: 15 }).map((_, i) => ({
+  // ==========================================
+  // GROUP 1: SAFE (usagePercent <= 60%) - FOOD TOP (10 templates)
+  // ==========================================
+  ...Array.from({ length: 10 }).map((_, i) => ({
     id: i + 1,
-    condition: (p: number, tc: string) => p <= 50,
-    summary: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number, curMonth: string) => {
+    condition: (p: number, tc: string) => p <= 60 && tc === "food",
+    summary: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => {
       const summaries = [
-        `今月のやりくりは非常に順調です。予算枠の半分以下に収まっており、¥${sav.toLocaleString()}の貯金枠がしっかり残っています。`,
-        `無駄な支出が徹底して省かれた美しい家計簿です。最多支出は${label}（¥${ttot.toLocaleString()}）ですが、全く問題のない比率です。`,
-        `計画的なマネーコントロールができています。現在の消化率は${p}%と非常に優秀で、将来に向けた先取り貯蓄が期待できます。`,
-        `家計全体の基礎体力が非常に高い状態です。最大の出費である${label}も、他のカテゴリがスリムなため安全圏にあります。`,
-        `今月のお金の使い方は理想的です。余剰金が¥${sav.toLocaleString()}もあり、急な出費や投資の原資として活用できる余裕があります。`,
-        `ストレスのない適正な節約が実行されています。${label}への適度な配分（全体の${tp}%）を含め、バランスが絶妙です。`,
-        `貯蓄スピードが最速のペースを維持しています。無駄なコンビニ代やサブスクの垂れ流しがないことが功を奏しています。`,
-        `お手本のような生活防衛家計です。最多支出項目が${label}ですが、予算上限の50%以内に抑えられており非常に堅実です。`,
-        `素晴らしい収支バランスです。現在の支出合計¥${tot.toLocaleString()}は、予算¥${bud.toLocaleString()}に対して十分低水準です。`,
-        `日常の購買における取捨選択がハッキリしています。最多の${label}の単価管理も徹底されていることが読み取れます。`,
-        `今月は大幅な黒字で着地予定です。節約できた¥${sav.toLocaleString()}をそのまま寝かさず、有意義に活用するフェーズです。`,
-        `生活コストが自然と低く抑えられており、家計の機動性がとても高いです。特に${label}の管理能力が高い状態です。`,
-        `支出全体に対する${label}（¥${ttot.toLocaleString()}）の配分がスマートで、メリハリのある使い方が評価できます。`,
-        `家計簿をつける習慣が完全に貯蓄力向上につながっています。今月は残り日数に対しても予算に十分すぎる空きがあります。`,
-        `素晴らしい成果です！最多の${label}の購入サイクルを適切にキープしつつ、¥${sav.toLocaleString()}のバッファを有しています。`
+        `今月は予算を十分に抑えられており、家計管理が極めて順調です。最も高い支出は${label}ですが、予算全体の範囲内に綺麗に収まっています。`,
+        `非常に計画的なお金の使い方ができています。${label}がメインの支出ですが、無駄遣いがなく非常に健全な状態です。`,
+        `スマートな家計簿記録と高い節約意識が功を奏しています。${label}が最多支出ですが、予算のゆとりは十分にあります。`,
+        `安定した家計バランスです。最多支出が日常的な${label}であることは極めて自然で、大きな心配はありません。`,
+        `素晴らしい進捗です。${label}への投資はあなたの生活の質の基盤ですので、予算内に収まっている限り最適です。`,
+        `全体的に非常にミニマルにまとまっています。${label}が最も多い項目ですが、非常に経済的です。`,
+        `安心の予算進捗率です。${label}も平均値を大きく下回る計画的な水準を維持しています。`,
+        `家計管理のお手本のような月です。最も多くの割合を占めるのが健康の元である${label}なのは健康的です。`,
+        `非常に優れたコストコントロールです。${label}は誰しも大きな負担になる中、ここまで低水準にできているのは素晴らしいです。`,
+        `とても順調に今月の家計が推移しています。${label}のコントロールが全体の高いパフォーマンスにつながっています。`
       ];
       return summaries[i % summaries.length];
     },
-    goodPoints: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
-      const points = [
-        [
-          `予算残高¥${sav.toLocaleString()}を確保し、今月はかなりの貯蓄を上乗せできています。`,
-          `最多支出の${label}（¥${ttot.toLocaleString()}）の消化率を低く抑え、家計を逼迫させていません。`
-        ],
-        [
-          `日常の基本出費を最小化し、不要な小額の支出（ついで買い等）が完璧にブロックされています。`,
-          `今月は大きな衝動買いが発生しておらず、月全体の支出総額が¥${tot.toLocaleString()}で極めて安定しています。`
-        ],
-        [
-          `最多支出項目が生活の基本である${label}（全体の${tp}%）に留まり、健全な比率を維持しています。`,
-          `予算枠に対して${Math.round(100 - p)}%もの広大なセーフ領域（¥${sav.toLocaleString()}）を残せています。`
-        ]
+    goodPoints: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `全体の支出を予算の半分以下に抑え、¥${sav.toLocaleString()}の貯蓄余力を生み出せています。`,
+      `最も高額な${label}（¥${ttot.toLocaleString()}）も全体のペースに悪影響を与えていません。`
+    ],
+    warningPoints: () => [
+      `大きな問題はありませんが、自炊の割合を維持して外食による急な出費増を防止しましょう。`,
+      `支出が抑えられている時こそ、次の大きな出費に備えて先取り貯金を検討してください。`
+    ],
+    suggestions: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `来月もこの調子を維持するため、週に1回だけまとめ買いの日を設けて支出の変動を抑えましょう。`,
+      `節約できた¥${Math.round(sav * 0.5).toLocaleString()}を投資や貯蓄に回す設定を行いましょう。`,
+      `${label}をあと5%削減すると、来月はさらに¥${Math.round(ttot * 0.05).toLocaleString()}を浮かせることができます。`
+    ]
+  })),
+
+  // ==========================================
+  // GROUP 2: SAFE (usagePercent <= 60%) - CONVENIENCE TOP (10 templates)
+  // ==========================================
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: i + 11,
+    condition: (p: number, tc: string) => p <= 60 && tc === "convenience",
+    summary: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => {
+      const summaries = [
+        `予算全体は抑えられていますが、最も高額な項目が${label}になっています。全体の管理が良いだけに、ここを改善すればさらに貯金できます。`,
+        `家計全体はセーフですが、最多支出が${label}です。時間効率とコストのバランスを見直す余地があります。`,
+        `全体予算は順調に推移しています。しかし、${label}がトップなので、改善の大きな伸び代があります。`,
+        `順調な家計簿記録です。ただ、最も高額なのが単価の高い${label}である点は、少し勿体ないポイントです。`,
+        `家計全体は非常に低コストで安全ですが、${label}が一番の出費です。時間の節約と引き換えにお金を多く払っている状態です。`,
+        `全体支出は低く抑えられており極めて健全です。しかし、最多支出が${label}なため、これをスーパーに切り替えるだけで家計はさらに劇的に改善します。`,
+        `予算は十分守られています。ただ、${label}への依存度が他と比較して高くなっています。`,
+        `とてもクリーンな家計簿です。最も割合が大きいのが日常の${label}ですが、スーパーに代用すれば今月の貯蓄率はMAXになります。`,
+        `家計全体はセーフゾーンですが、もっと貯蓄力を伸ばせます。なぜなら、単価の高い${label}が支出トップだからです。`,
+        `今月は非常にお金をコントロールできています。ただ、やはり${label}（¥${ttot.toLocaleString()}）はより削減可能な項目です。`
       ];
-      return points[i % points.length];
+      return summaries[i % summaries.length];
     },
-    warningPoints: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
-      const warns = [
-        [
-          `大きな問題はありませんが、予算が余っているからと月末に不要なセール品を衝動買いしないよう警戒しましょう。`,
-          `口座の残高に余裕があると油断して、来月に繰り越す支払いを増やさないように気をつけます。`
-        ],
-        [
-          `食費や日常支出を無理に削りすぎて、体調管理や栄養のバランスを崩していないかだけ注意してください。`,
-          `水道光熱費やスマートフォンの基本プランなど、一度見直すと効果が永続する固定費の確認を怠らないようにします。`
-        ],
-        [
-          `クレジットカードのポイント失効や、銀行の引き出し手数料などの小さな「見えないロス」がないか確認しましょう。`,
-          `来月以降に大きなイベントや旅行を控えている場合、その分のバッファを現在の余裕から差し引いて考えます。`
-        ]
+    goodPoints: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `予算上限に達することなく、計画的に家計全体をコントロールできています。`,
+      `他の娯楽や大きな買い物がなく、全体の基礎的な生活コストは非常に低いです。`
+    ],
+    warningPoints: () => [
+      `コンビニは割高な商品が多い（ドリンク、お菓子等）ため、小さな無駄が積もり積もっています。`,
+      `便利さに依存して、スーパーで安く買えるものまで高値で買っている傾向があります。`
+    ],
+    suggestions: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `コンビニに行くのは「週に2回まで」とし、用事がない時は店内に入らないようにしましょう。`,
+      `コンビニで買っていた飲み物を、スーパーのまとめ買いやネット通販での箱買いに変えるだけで、月額の大幅な節約になります。`,
+      `マイボトルに自宅で沸かしたお茶を入れ、毎日の飲み物代をすべてゼロに抑えましょう。`
+    ]
+  })),
+
+  // ==========================================
+  // GROUP 3: SAFE (usagePercent <= 60%) - OTHER TOP / HOBBY etc. (10 templates)
+  // ==========================================
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: i + 21,
+    condition: (p: number, tc: string) => p <= 60,
+    summary: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
+      const summaries = [
+        `全体の支出がかなり低く抑えられていて優秀です。最も出費が多かったのは${label}ですが、予算のゆとりは極めて大きいです。`,
+        `非常にミニマムな家計で素晴らしいです。最多項目が${label}なのは、生活に必要な他の基礎コストが劇的に抑えられているからです。`,
+        `スマートなマネーコントロールです。最も大きい${label}も、他の項目の節約によって完全にカバーされています。`,
+        `大変わ安定した家計推移で文句ありません。特に、最多項目が${label}であっても余裕があるのが強力です。`,
+        `計画的で健全なお金の管理です。最多支出項目が${label}になっていますが、予算への影響は微々たるものです。`,
+        `非常に素晴らしいマネーコントロールです。最多支出である${label}を含めて、すべての項目がスマートです。`,
+        `安心して見ていられる家計状況です。最も高額な項目が${label}ですが、予算全体への圧迫はまったくありません。`,
+        `非常に高いスコアで家計簿が運営されています。最多項目が${label}ですが、全体的に完璧なバランスです。`,
+        `非常に理想的な黒字家計です。最も多く使ったのが${label}ですが、予算の消化ペースは極めて安全です。`,
+        `極めて安定した家計実績を達成した月です。最も多くの費用を割いたのが${label}ですが、他がスリムなので理想的です。`
       ];
-      return warns[i % warns.length];
+      return summaries[i % summaries.length];
     },
-    suggestions: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
+    goodPoints: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `予算上限に対して大きなバッファを持ち、¥${sav.toLocaleString()}の余剰を確保しています。`,
+      `固定費や家賃、サブスク代金など、生活の固定部分が肥大化していないのが最大の強みです。`
+    ],
+    warningPoints: () => [
+      `大きな問題はありませんが、予算が余っているからと月末に不要なセール品を衝動買いしないよう警戒しましょう。`,
+      `特定のカテゴリのみにお金が集中しやすいため、全体のバランス感覚を維持しましょう。`
+    ],
+    suggestions: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => {
       const basicSugs = getConcreteSuggestions(label, ttot, 15, bud);
       return [
-        `貯まった¥${sav.toLocaleString()}のうち、¥${Math.round(sav * 0.4).toLocaleString()}を投資や先取り貯金用口座へ自動送金する設定をしましょう。`,
+        `今月残った¥${sav.toLocaleString()}の一部を「特別費」としてプールし、旅行などの一時支出に備えましょう。`,
         ...basicSugs.slice(0, 2)
       ];
     }
   })),
 
-  // -------------------------------------------------------------
-  // GROUP B: 予算消化率がやや高く、調整が必要な警戒家計 (50% < usagePercent <= 90%) (15パターン)
-  // -------------------------------------------------------------
-  ...Array.from({ length: 15 }).map((_, i) => ({
-    id: i + 16,
-    condition: (p: number, tc: string) => p > 50 && p <= 90,
-    summary: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number, curMonth: string) => {
+  // ==========================================
+  // GROUP 4: CAUTION/WARNING (60% < usagePercent <= 90%) (10 templates)
+  // ==========================================
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: i + 31,
+    condition: (p: number, tc: string) => p > 60 && p <= 90,
+    summary: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => {
       const summaries = [
         `予算上限に近づきつつあり、現在の消化ペースは${p}%です。最多支出の${label}（¥${ttot.toLocaleString()}）を抑えることが、残りの日数を乗り切る鍵になります。`,
         `イエローサインが灯っています。残り予算が¥${sav.toLocaleString()}となっているため、月末にかけて無駄な出費の徹底的な排除が必要です。`,
-        `少し支出のスピードが早めです。生活の大部分を占める${label}（比率${tp}%）の中に、見直せる余地が隠れています。`,
+        `少し支出のスピードが早めです。生活の大部分を占める${label}の中に、見直せる余地が隠れています。`,
         `現時点では予算内ですが、少額の買い物が積み重なって予算上限を脅かしつつあります。最大の項目は${label}です。`,
         `支出合計¥${tot.toLocaleString()}は、予算¥${bud.toLocaleString()}の${p}%に達しています。ここからの数日間のやりくりが極めて重要です。`,
         `やや警告状態に近い推移です。特に日常費である${label}が全体の家計比率を引き上げてしまっています。`,
         `予算オーバーを防ぐための防衛期間に入りました。残り期間で削れる変動費、特に${label}の買い出しを見直しましょう。`,
         `残高にそれなりの余裕はありますが、月末に向けて気が緩むと一気に予算上限を突破する危険性があるバランスです。`,
         `何気なく使っているお金が多発している形跡があります。最多項目の${label}（¥${ttot.toLocaleString()}）の勢いを落とす時期です。`,
-        `現在のペースだと、来月に向けての貯金目標に達しない恐れがあります。まずは${label}の単価を下げる工夫から始めましょう。`,
-        `家計全体の進捗率は${p}%で踏みとどまっていますが、月末の固定引き落とし分を残しておく必要があります。`,
-        `少し出費の波が大きくなっています。特に高額になりがちな${label}の購入頻度とルールを再確認してください。`,
-        `予算残高は¥${sav.toLocaleString()}です。大きな買い物は来月に見送り、日々のランニングコストを最優先にすべき状態です。`,
-        `記録はしっかりできていますが、支出の伸びが目立ちます。最多の${label}を中心に、あと一歩の自制心が必要です。`,
-        `計画予算の${p}%を消費しています。ここからのお金の使い方次第で、今月が黒字か赤字かが決まります。`
+        `現在のペースだと、来月に向けての貯金目標に達しない恐れがあります。まずは${label}の単価を下げる工夫から始めましょう。`
       ];
       return summaries[i % summaries.length];
     },
-    goodPoints: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
-      const points = [
-        [
-          `現時点では予算を完全にオーバーすることなく、目標の枠内に収まり続けています。`,
-          `無駄なローンや高額な分割払いがなく、変動費の調整だけで簡単に軌道修正ができる構造です。`
-        ],
-        [
-          `家計簿に日々の全ての出費が即座に記録されているため、何が使いすぎの原因かすぐに特定できます。`,
-          `食費や日常日用品など、削りやすい変動費カテゴリ（${label}）にのみ支出が集中している点です。`
-        ],
-        [
-          `固定費（通信費や保険など）の肥大化がなく、自制次第で翌月以降に大きな改善が狙える余地があります。`,
-          `一時的なピンチに気づいており、予算残高¥${sav.toLocaleString()}を意識した行動が取れています。`
-        ]
-      ];
-      return points[i % points.length];
-    },
-    warningPoints: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
-      const warns = [
-        [
-          `残された予算は¥${sav.toLocaleString()}のみであり、ちょっとした外食や日用品の重複買いで簡単に赤字に転落します。`,
-          `最多支出の${label}の増加率が高く、買い出しの回数と1回あたりの購入単価が上昇傾向にあります。`
-        ],
-        [
-          `「1回あたり数百円」という手軽なキャッシュレス決済の連発が、知らない間に合計¥${tot.toLocaleString()}まで膨らむ罠になっています。`,
-          `月末までに発生するスマートフォンの料金やサブスクなど、口座引き落とし予定金額が考慮されていません。`
-        ],
-        [
-          `お腹が空いている時間帯やストレスが溜まっているときに、不要な甘いものなどを衝動買いする傾向があります。`,
-          `特売だからと余計な量を購入し、結果的に使い切れずに一部の食材をムダにしていないか振り返りが必要です。`
-        ]
-      ];
-      return warns[i % warns.length];
-    },
-    suggestions: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
+    goodPoints: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `現時点では予算を完全にオーバーすることなく、目標の枠内に収まり続けています。`,
+      `無駄なローンや高額な分割払いがなく、変動費の調整だけで簡単に軌道修正ができる構造です。`
+    ],
+    warningPoints: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `残された予算は¥${sav.toLocaleString()}のみであり、ちょっとした外食や日用品の重複買いで簡単に赤字に転落します。`,
+      `最多支出の${label}の増加率が高く、買い出しの回数と1回あたりの購入単価が上昇傾向にあります。`
+    ],
+    suggestions: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => {
       const basicSugs = getConcreteSuggestions(label, ttot, 10, bud);
       return [
         `今月が終わるまでの残り日数、1日の使用上限を ¥${Math.floor(sav / 10).toLocaleString()} と定めてこれを超える決済を完全に防ぎましょう。`,
@@ -234,18 +243,18 @@ const TEMPLATES = [
     }
   })),
 
-  // -------------------------------------------------------------
-  // GROUP C: 予算オーバー状態または極めてピンチな赤字家計 (usagePercent > 90%) (20パターン)
-  // -------------------------------------------------------------
-  ...Array.from({ length: 20 }).map((_, i) => ({
-    id: i + 31,
+  // ==========================================
+  // GROUP 5: OVER BUDGET (usagePercent > 90%) (10 templates)
+  // ==========================================
+  ...Array.from({ length: 10 }).map((_, i) => ({
+    id: i + 41,
     condition: (p: number, tc: string) => p > 90,
-    summary: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number, curMonth: string) => {
+    summary: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => {
       const isOver = tot > bud;
       const amountDiff = Math.abs(sav);
       const summaries = [
-        `今月はすでに予算を消化しきっており、${isOver ? `¥${amountDiff.toLocaleString()}の赤字` : "予算限界のピンチ"}となっています。主な原因は最多の${label}（¥${ttot.toLocaleString()}）への過剰な出費です。`,
-        `危険な状態です。残額が極めて少なく、最多支出の${label}が全体の${tp}%を占め、家計全体を押し潰しています。`,
+        `今月はすでに予算を消化しきっており、${isOver ? `¥${amountDiff.toLocaleString()}の赤字` : "予算限界のピンチ"}となっています。主な原因は最多の${label}（¥${ttot.toLocaleString()}）への出費です。`,
+        `危険な状態です。残額が極めて少なく、最多支出の${label}が全体を押し潰しています。`,
         `完全に予算上限を突破しました。特に${label}の購入頻度が高く、コストの歯止めが機能しなかったことが主要因です。`,
         `家計改善が最も必要な状況です。月予算¥${bud.toLocaleString()}に対して、現在の進捗率は${p}%を超えています。`,
         `今月は非常事態です。最も多くの割合を占める${label}（¥${ttot.toLocaleString()}）の出費を即座に「ゼロ」に近づける必要があります。`,
@@ -253,56 +262,19 @@ const TEMPLATES = [
         `予算の上限を超過しており、来月以降のおサイフ事情への影響が確定的です。${label}の見直しが急務です。`,
         `コントロールを失いつつあります。今月の赤字¥${isOver ? amountDiff.toLocaleString() : "寸前"}を真摯に受け止め、対策を講じましょう。`,
         `基本生活費である${label}が暴走してしまっています。全体の予算対比が${p}%と、非常に厳しい実績です。`,
-        `今月は赤字決算です。一番金額の大きい${label}への支払いが、家計を大きく歪めてしまった元凶です。`,
-        `予算消化がすでに極限に達しており、来月の先取り貯金を切り崩さざるを得ない危険な局面です。`,
-        `最も高い出費が割高になりがちな${label}であるため、同じやり方を続けると来月も同様にオーバーします。`,
-        `今月の総支出¥${tot.toLocaleString()}は、完全にあなたの設定予算を超過しています。早急な対策が必要です。`,
-        `予算のクッションが完全に消滅しました。ここからの全ての出費は来月からの借金になる状態です。`,
-        `食費や日常費に該当する${label}が当初予定の倍近くに膨れ上がったため、大赤字になっています。`,
-        `家計防衛力が非常に低下しています。まずは最多の${label}（全体の${tp}%）に潜む無駄を徹底解剖しましょう。`,
-        `予算を¥${isOver ? amountDiff.toLocaleString() : "大幅に"}超えており、貯金蓄積どころか資産の流出が起きています。`,
-        `最多支出の${label}のペース配分が今月は完全に崩れてしまいました。行動パターンの転換が必要です。`,
-        `非常に危機的な月です。生活コストが高くなりすぎているため、今すぐブレーキを踏む必要があります。`,
-        `計画予算額を大きく突破してしまいました。これを一時的な例外に留めるため、直近の購買記録を見直します。`
+        `今月は赤字決算です。一番金額の大きい${label}への支払いが、家計を大きく歪めてしまった元凶です。`
       ];
       return summaries[i % summaries.length];
     },
-    goodPoints: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
-      const points = [
-        [
-          `家計簿の記録を中断せず、赤字の数値現実から目を背けずに最後まで入力し続けている点は素晴らしいです。`,
-          `無駄な固定費（使っていないサブスク等）の無駄払いは少なく、問題の焦点が変動費（${label}）に明確に絞られている点です。`
-        ],
-        [
-          `支出の全履歴が金額つきで可視化されているため、来月に向けた「やめるべき無駄」のリストアップが簡単におこなえます。`,
-          `家賃や保険料など、削減の難しいインフラ支出そのものは安全に抑えられています。`
-        ],
-        [
-          `過去の支出明細から「どこで浪費したか」のピーク（高額支払いの日）を正確に検知できています。`,
-          `今すぐ削減可能なカテゴリ（${label}）が出費のトップを占めているため、やるべき改善策が非常にシンプルです。`
-        ]
-      ];
-      return points[i % points.length];
-    },
-    warningPoints: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
-      const amountDiff = Math.abs(sav);
-      const warns = [
-        [
-          `予算上限をオーバーして¥${amountDiff.toLocaleString()}超過しており、生活防衛資金を切り崩してしまう悪循環にあります。`,
-          `最多支出の${label}（¥${ttot.toLocaleString()}）は、日常的な買い物回数の多さが生んだ「チリツモ無駄」の集合体です。`
-        ],
-        [
-          `クレジットカードの利用枠や決済口座の引き落としが来月以降にずれている場合、さらなる実質赤字が重なります。`,
-          `「安さ」や「便利さ」を理由に、同じような物を重複して買っている食材ロスや日用品ロスがあります。`
-        ],
-        [
-          `ATMでの引き出し手数料やコンビニ手数料など、数回重なれば数百円〜数千円になる細かなコストへの意識が低下しています。`,
-          `お酒やコンビニスイーツなど、ストレスを発散するための「習慣的浪費」が定着してしまっています。`
-        ]
-      ];
-      return warns[i % warns.length];
-    },
-    suggestions: (tot: number, bud: number, sav: number, label: string, ttot: number, tp: number) => {
+    goodPoints: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `家計簿の記録を中断せず、赤字の数値現実から目を背けずに最後まで入力し続けている点は素晴らしいです。`,
+      `問題がある項目が${label}に集中しているため、対策を立てるべきポイントが明確です。`
+    ],
+    warningPoints: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => [
+      `予算上限をオーバーして¥${Math.abs(sav).toLocaleString()}超過しており、生活防衛資金を切り崩してしまう悪循環にあります。`,
+      `最多支出の${label}（¥${ttot.toLocaleString()}）は、日常的な買い物回数の多さが生んだ「チリツモ無駄」の集合体です。`
+    ],
+    suggestions: (p: number, tot: number, bud: number, sav: number, label: string, ttot: number) => {
       const basicSugs = getConcreteSuggestions(label, ttot, 5, bud);
       return [
         `来月の最初の1週間は、生活必需品（食品・日用品）以外の買い物を完全に禁止する「ノーマネーデー（出費ゼロ日）」を強制的に2回設けましょう。`,
@@ -329,10 +301,10 @@ export function generateTemplateAnalysis(ctx: AnalysisContext): AnalysisResponse
     : TEMPLATES[TEMPLATES.length - 1];
 
   return {
-    summary: selectedTemplate.summary(ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent, ctx.currentMonth),
-    goodPoints: selectedTemplate.goodPoints(ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
-    warningPoints: selectedTemplate.warningPoints(ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
-    suggestions: selectedTemplate.suggestions(ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
+    summary: selectedTemplate.summary(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent, ctx.currentMonth),
+    goodPoints: selectedTemplate.goodPoints(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
+    warningPoints: selectedTemplate.warningPoints(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
+    suggestions: selectedTemplate.suggestions(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
     topCategory: topCatName,
     topCategoryPercent: topCatPercent,
   };
