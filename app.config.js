@@ -1,6 +1,5 @@
-import fs from "fs";
-import path from "path";
-import type { ExpoConfig } from "expo/config";
+const fs = require("fs");
+const path = require("path");
 
 // Load environment variables with proper priority (system > .env)
 const envPath = path.resolve(process.cwd(), ".env");
@@ -21,7 +20,7 @@ if (fs.existsSync(envPath)) {
 }
 
 // Map system variables to Expo public variables
-const mappings: Record<string, string> = {
+const mappings = {
   VITE_APP_ID: "EXPO_PUBLIC_APP_ID",
   VITE_OAUTH_PORTAL_URL: "EXPO_PUBLIC_OAUTH_PORTAL_URL",
   OAUTH_SERVER_URL: "EXPO_PUBLIC_OAUTH_SERVER_URL",
@@ -34,43 +33,33 @@ for (const [systemVar, expoVar] of Object.entries(mappings)) {
   }
 }
 
-// Bundle ID format: space.manus.<project_name_dots>.<timestamp>
-// e.g., "my-app" created at 2024-01-15 10:30:45 -> "space.manus.my.app.t20240115103045"
-// Bundle ID can only contain letters, numbers, and dots
-// Android requires each dot-separated segment to start with a letter
 const rawBundleId = "com.app.moneycoach";
 const bundleId =
   rawBundleId
-    .replace(/[-_]/g, ".") // Replace hyphens/underscores with dots
-    .replace(/[^a-zA-Z0-9.]/g, "") // Remove invalid chars
-    .replace(/\.+/g, ".") // Collapse consecutive dots
-    .replace(/^\.+|\.+$/g, "") // Trim leading/trailing dots
+    .replace(/[-_]/g, ".")
+    .replace(/[^a-zA-Z0-9.]/g, "")
+    .replace(/\.+/g, ".")
+    .replace(/^\.+|\.+$/g, "")
     .toLowerCase()
     .split(".")
     .map((segment) => {
-      // Android requires each segment to start with a letter
-      // Prefix with 'x' if segment starts with a digit
       return /^[a-zA-Z]/.test(segment) ? segment : "x" + segment;
     })
     .join(".") || "space.manus.app";
-// Extract timestamp from bundle ID and prefix with "manus" for deep link scheme
-// e.g., "space.manus.my.app.t20240115103045" -> "manus20240115103045"
+
 const timestamp = bundleId.split(".").pop()?.replace(/^t/, "") ?? "";
 const schemeFromBundleId = `manus${timestamp}`;
 
 const env = {
-  // App branding - update these values directly (do not use env vars)
   appName: "MoneyCoach",
   appSlug: "money-coach",
-  // S3 URL of the app logo - set this to the URL returned by generate_image when creating custom logo
-  // Leave empty to use the default icon from assets/images/icon.png
   logoUrl: "https://d2xsxph8kpxj0f.cloudfront.net/310519663181205912/Hhn254zN9KBNABgNxJym2z/icon-hyNACumXwTmwi7scCuVdqG.png",
   scheme: schemeFromBundleId,
   iosBundleId: bundleId,
   androidPackage: bundleId,
 };
 
-const config: ExpoConfig = {
+const config = {
   name: env.appName,
   slug: env.appSlug,
   version: "1.0.0",
@@ -160,4 +149,4 @@ const config: ExpoConfig = {
   },
 };
 
-export default config;
+module.exports = config;
