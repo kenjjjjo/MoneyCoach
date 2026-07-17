@@ -5,6 +5,7 @@ import { Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 import { useState } from "react";
 
 import { ScreenContainer } from "@/components/screen-container";
+import { DonutChart } from "@/components/donut-chart";
 import { useColors } from "@/hooks/use-colors";
 import { CATEGORY_COLORS, CATEGORY_LABELS, type Category, useExpenses } from "@/lib/expense-context";
 
@@ -236,6 +237,38 @@ export default function HomeScreen() {
     </View>
   );
 
+  // 円グラフ + カテゴリ内訳ミニカード（ホーム用）
+  const donutData = Object.entries(categoryTotals)
+    .map(([cat, total]) => ({ category: cat as Category, value: total as number }))
+    .sort((a, b) => b.value - a.value);
+
+  const categoryBreakdownMiniCard = donutData.length > 0 && (
+    <View style={[styles.sectionCard, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+      <View style={styles.sectionHeader}>
+        <MaterialIcons name="pie-chart" size={18} color={colors.primary} />
+        <Text style={[styles.sectionTitle, { color: colors.foreground }]}>カテゴリ別内訳</Text>
+      </View>
+      <View style={styles.donutRow}>
+        <DonutChart segments={donutData} size={90} strokeWidth={14} />
+        <View style={styles.donutLegend}>
+          {donutData.slice(0, 4).map((item) => {
+            const pct = monthlyTotal > 0 ? Math.round((item.value / monthlyTotal) * 100) : 0;
+            return (
+              <View key={item.category} style={styles.legendRow}>
+                <View style={[styles.legendDot, { backgroundColor: CATEGORY_COLORS[item.category] ?? "#9CA3AF" }]} />
+                <Text style={[styles.legendLabel, { color: colors.foreground }]}>
+                  {CATEGORY_LABELS[item.category] ?? item.category}
+                </Text>
+                <Text style={[styles.legendPct, { color: colors.muted }]}>{pct}%</Text>
+                <Text style={[styles.legendAmt, { color: colors.foreground }]}>¥{item.value.toLocaleString()}</Text>
+              </View>
+            );
+          })}
+        </View>
+      </View>
+    </View>
+  );
+
   const recurringSummaryCard = recurringMonthlyTotal > 0 && (
     <Pressable
       style={({ pressed }) => [
@@ -323,6 +356,7 @@ export default function HomeScreen() {
                 {mascotStatusBanner}
                 {monthlyExpenseCard}
                 {dailyAndForecastCards}
+                {categoryBreakdownMiniCard}
               </View>
 
               {/* 右側カラム */}
@@ -337,6 +371,7 @@ export default function HomeScreen() {
               {mascotStatusBanner}
               {monthlyExpenseCard}
               {dailyAndForecastCards}
+              {categoryBreakdownMiniCard}
               {expenseRankingCard}
               {recurringSummaryCard}
               {quickActionCard}
@@ -553,6 +588,42 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "600",
     width: 72,
+    textAlign: "right",
+  },
+  // DonutChart + Legend
+  donutRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 16,
+  },
+  donutLegend: {
+    flex: 1,
+    gap: 8,
+  },
+  legendRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 6,
+  },
+  legendDot: {
+    width: 9,
+    height: 9,
+    borderRadius: 5,
+  },
+  legendLabel: {
+    fontSize: 12,
+    fontWeight: "500",
+    flex: 1,
+  },
+  legendPct: {
+    fontSize: 11,
+    width: 30,
+    textAlign: "right",
+  },
+  legendAmt: {
+    fontSize: 12,
+    fontWeight: "600",
+    width: 68,
     textAlign: "right",
   },
   // クイックアクション
