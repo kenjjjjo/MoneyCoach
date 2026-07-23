@@ -26,8 +26,17 @@ import {
 
 export default function SettingsScreen() {
   const colors = useColors();
-  const { state, setBudget, updateNotificationSettings } = useExpenses();
-  const { deleteRecurring } = useExpenses();
+  const {
+    state,
+    setBudget,
+    updateNotificationSettings,
+    deleteRecurring,
+    getCategoryLabel,
+    getCategoryColor,
+    getCategoryIcon,
+    addCustomCategory,
+    deleteCustomCategory,
+  } = useExpenses();
   const [budgetInput, setBudgetInput] = useState(state.monthlyBudget.toString());
   const [isEditing, setIsEditing] = useState(false);
 
@@ -340,19 +349,19 @@ export default function SettingsScreen() {
                 <View
                   style={[
                     styles.recurringIconWrap,
-                    { backgroundColor: CATEGORY_COLORS[item.category] + "22" },
+                    { backgroundColor: getCategoryColor(item.category) + "22" },
                   ]}
                 >
                   <MaterialIcons
-                    name={CATEGORY_ICONS[item.category] as never}
+                    name={(getCategoryIcon(item.category) || "category") as never}
                     size={20}
-                    color={CATEGORY_COLORS[item.category]}
+                    color={getCategoryColor(item.category)}
                   />
                 </View>
                 <View style={styles.recurringInfo}>
                   <Text style={[styles.recurringName, { color: colors.foreground }]}>{item.name}</Text>
                   <Text style={[styles.recurringMeta, { color: colors.muted }]}>
-                    {CATEGORY_LABELS[item.category]} · 毎月{item.billingDay}日 · ¥{item.amount.toLocaleString()}
+                    {getCategoryLabel(item.category)} · 毎月{item.billingDay}日 · ¥{item.amount.toLocaleString()}
                   </Text>
                 </View>
                 <View style={styles.recurringActions}>
@@ -411,6 +420,69 @@ export default function SettingsScreen() {
           </Text>
         </View>
       )}
+    </View>
+  );
+
+  const customCategorySection = (
+    <View style={styles.section}>
+      <Text style={[styles.sectionLabel, { color: colors.muted }]}>カスタムカテゴリ</Text>
+      <View style={[styles.card, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+        {state.customCategories.length === 0 ? (
+          <View style={styles.emptyRecurring}>
+            <MaterialIcons name="category" size={32} color={colors.muted} />
+            <Text style={[styles.emptyRecurringText, { color: colors.muted }]}>
+              カスタムカテゴリはありません
+            </Text>
+            <Text style={[styles.emptyRecurringSubText, { color: colors.muted }]}>
+              支出登録画面の「+追加」からオリジナルのカテゴリを作成できます
+            </Text>
+          </View>
+        ) : (
+          state.customCategories.map((item, idx) => (
+            <View key={item.id}>
+              <View style={styles.recurringRow}>
+                <View
+                  style={[
+                    styles.recurringIconWrap,
+                    { backgroundColor: item.color + "22" },
+                  ]}
+                >
+                  <MaterialIcons
+                    name={(item.icon || "category") as never}
+                    size={20}
+                    color={item.color}
+                  />
+                </View>
+                <View style={styles.recurringInfo}>
+                  <Text style={[styles.recurringName, { color: colors.foreground }]}>{item.name}</Text>
+                </View>
+                <Pressable
+                  onPress={() =>
+                    Alert.alert(
+                      "削除の確認",
+                      `「${item.name}」カテゴリを削除しますか？`,
+                      [
+                        { text: "キャンセル", style: "cancel" },
+                        {
+                          text: "削除",
+                          style: "destructive",
+                          onPress: () => deleteCustomCategory(item.id),
+                        },
+                      ]
+                    )
+                  }
+                  style={({ pressed }) => [styles.recurringDeleteBtn, pressed && { opacity: 0.6 }]}
+                >
+                  <MaterialIcons name="delete-outline" size={18} color="#EF4444" />
+                </Pressable>
+              </View>
+              {idx < state.customCategories.length - 1 && (
+                <View style={[styles.rowDivider, { backgroundColor: colors.border }]} />
+              )}
+            </View>
+          ))
+        )}
+      </View>
     </View>
   );
 
@@ -506,6 +578,7 @@ export default function SettingsScreen() {
                 <View style={styles.pcLeftCol}>
                   {budgetSection}
                   {notificationSection}
+                  {customCategorySection}
                   {webPushSection}
                   {futureSection}
                 </View>
@@ -521,6 +594,7 @@ export default function SettingsScreen() {
               <>
                 {budgetSection}
                 {notificationSection}
+                {customCategorySection}
                 {webPushSection}
                 {recurringSection}
                 {futureSection}
@@ -719,6 +793,9 @@ const styles = StyleSheet.create({
   },
   recurringTotalLabel: { fontSize: 14, fontWeight: "500" },
   recurringTotalValue: { fontSize: 18, fontWeight: "800" },
+  scrollContent: {
+    padding: 16,
+  },
   scrollContentPC: {
     maxWidth: 1000,
     width: "100%",

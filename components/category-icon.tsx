@@ -2,17 +2,18 @@ import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import React from "react";
 import { View } from "react-native";
 
-import { CATEGORY_COLORS, CATEGORY_ICONS, type Category } from "@/lib/expense-context";
+import { useExpenses } from "@/lib/expense-context";
 
 type Props = {
-  category: Category;
+  category: string;
   size?: number;
   iconSize?: number;
 };
 
 export function CategoryIcon({ category, size = 44, iconSize = 22 }: Props) {
-  const bgColor = CATEGORY_COLORS[category];
-  const iconName = CATEGORY_ICONS[category] as React.ComponentProps<typeof MaterialIcons>["name"];
+  const { getCategoryColor, getCategoryIcon } = useExpenses();
+  const bgColor = getCategoryColor(category);
+  const iconName = (getCategoryIcon(category) || "category") as React.ComponentProps<typeof MaterialIcons>["name"];
 
   return (
     <View

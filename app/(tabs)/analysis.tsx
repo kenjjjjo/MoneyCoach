@@ -242,7 +242,10 @@ export default function AnalysisScreen() {
           date: e.createdAt.slice(0, 10),
         })),
       });
-      replaceMessage(typingId, result.reply);
+      replaceMessage(
+        typingId,
+        typeof result.reply === "string" ? result.reply : JSON.stringify(result.reply)
+      );
     } catch {
       replaceMessage(typingId, "すみません、うまく答えられませんでした。もう一度お試しください。");
     }

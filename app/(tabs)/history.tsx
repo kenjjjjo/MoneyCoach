@@ -54,39 +54,33 @@ function formatTime(isoStr: string): string {
 
 // Swipeable expense row
 function ExpenseRow({ item, onDelete, onEdit, colors }: { item: Expense; onDelete: (id: string) => void; onEdit: (id: string) => void; colors: ReturnType<typeof useColors> }) {
+  const { getCategoryLabel, getCategoryColor, getCategoryIcon } = useExpenses();
   const translateX = useMemo(() => new Animated.Value(0), []);
   const [swiped, setSwiped] = useState(false);
 
   const handleSwipeLeft = useCallback(() => {
-    if (swiped) {
-      // already open, do delete
-      onDelete(item.id);
-      return;
-    }
     Animated.timing(translateX, {
       toValue: -80,
-      duration: 200,
+      duration: 150,
       useNativeDriver: true,
     }).start(() => setSwiped(true));
-  }, [swiped, translateX, onDelete, item.id]);
+  }, [translateX]);
 
   const handleClose = useCallback(() => {
     Animated.timing(translateX, {
       toValue: 0,
-      duration: 200,
+      duration: 150,
       useNativeDriver: true,
     }).start(() => setSwiped(false));
   }, [translateX]);
 
   const handleDelete = useCallback(() => {
-    if (Platform.OS !== "web") {
-      Haptics.notificationAsync(Haptics.NotificationFeedbackType.Warning);
-    }
-    Alert.alert("削除確認", "この支出を削除しますか？", [
-      { text: "キャンセル", style: "cancel", onPress: handleClose },
-      { text: "削除", style: "destructive", onPress: () => onDelete(item.id) },
-    ]);
-  }, [onDelete, item.id, handleClose]);
+    onDelete(item.id);
+  }, [item.id, onDelete]);
+
+  const catColor = getCategoryColor(item.category);
+  const iconName = (getCategoryIcon(item.category) || "category") as never;
+  const catLabel = getCategoryLabel(item.category);
 
   return (
     <View style={styles.swipeContainer}>
@@ -118,18 +112,18 @@ function ExpenseRow({ item, onDelete, onEdit, colors }: { item: Expense; onDelet
           <View
             style={[
               styles.categoryIconWrap,
-              { backgroundColor: CATEGORY_COLORS[item.category] + "22" },
+              { backgroundColor: catColor + "22" },
             ]}
           >
             <MaterialIcons
-              name={CATEGORY_ICONS[item.category] as never}
+              name={iconName}
               size={20}
-              color={CATEGORY_COLORS[item.category]}
+              color={catColor}
             />
           </View>
           <View style={styles.expenseInfo}>
             <Text style={[styles.expenseCategoryLabel, { color: colors.foreground }]}>
-              {CATEGORY_LABELS[item.category]}
+              {catLabel}
             </Text>
             {item.memo ? (
               <Text style={[styles.expenseMemo, { color: colors.muted }]} numberOfLines={1}>
@@ -437,7 +431,7 @@ function MonthlySummaryView({
 export default function HistoryScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { state, deleteExpense, getMonthlyExpenses, getCurrentMonthKey } = useExpenses();
+  const { state, deleteExpense, getCategoryLabel, getCategoryColor, getMonthlyExpenses, getCurrentMonthKey } = useExpenses();
   const [viewMode, setViewMode] = useState<ViewMode>("list");
   const [layoutWidth, setLayoutWidth] = useState(0);
   const isPC = layoutWidth >= 768;
@@ -515,9 +509,9 @@ export default function HistoryScreen() {
               const percent = monthlyTotal > 0 ? Math.round((item.value / monthlyTotal) * 100) : 0;
               return (
                 <View key={item.category} style={styles.pcCatRow}>
-                  <View style={[styles.pcCatDot, { backgroundColor: CATEGORY_COLORS[item.category] }]} />
+                  <View style={[styles.pcCatDot, { backgroundColor: getCategoryColor(item.category) }]} />
                   <Text style={[styles.pcCatLabel, { color: colors.foreground }]} numberOfLines={1}>
-                    {CATEGORY_LABELS[item.category]}
+                    {getCategoryLabel(item.category)}
                   </Text>
                   <Text style={[styles.pcCatPercent, { color: colors.muted }]}>{percent}%</Text>
                   <Text style={[styles.pcCatAmount, { color: colors.foreground }]}>
@@ -1054,6 +1048,9 @@ const styles = StyleSheet.create({
     alignItems: "center",
     justifyContent: "center",
     width: "100%",
+  },
+  scrollContent: {
+    padding: 16,
   },
   pcDateGroupCard: {
     borderRadius: 16,

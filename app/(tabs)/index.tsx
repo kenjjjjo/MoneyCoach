@@ -7,7 +7,7 @@ import { useState } from "react";
 import { ScreenContainer } from "@/components/screen-container";
 import { DonutChart } from "@/components/donut-chart";
 import { useColors } from "@/hooks/use-colors";
-import { CATEGORY_COLORS, CATEGORY_LABELS, type Category, useExpenses } from "@/lib/expense-context";
+import { type Category, useExpenses } from "@/lib/expense-context";
 
 // V3.0: ステータス判定
 type StatusLevel = "safe" | "caution" | "danger";
@@ -60,7 +60,16 @@ function getMascotComment(status: StatusLevel, dailyBudget: number): string {
 export default function HomeScreen() {
   const colors = useColors();
   const router = useRouter();
-  const { state, getMonthlyExpenses, getMonthlyTotal, getCurrentMonthKey } = useExpenses();
+  const {
+    state,
+    getMonthlyExpenses,
+    getMonthlyTotal,
+    getCurrentMonthKey,
+    calculateScore,
+    getInsights,
+    getCategoryLabel,
+    getCategoryColor,
+  } = useExpenses();
   const [layoutWidth, setLayoutWidth] = useState(0);
   const isPC = layoutWidth >= 768;
 
@@ -211,20 +220,22 @@ export default function HomeScreen() {
       </View>
       {ranking.map((item, index) => {
         const percent = monthlyTotal > 0 ? Math.round((item.total / monthlyTotal) * 100) : 0;
+        const color = getCategoryColor(item.category);
+        const label = getCategoryLabel(item.category);
         return (
           <View key={item.category} style={styles.rankingRow}>
             <Text style={[styles.rankingNum, { color: index === 0 ? "#F59E0B" : index === 1 ? "#9CA3AF" : "#CD7F32" }]}>
               {index + 1}
             </Text>
-            <View style={[styles.rankingDot, { backgroundColor: CATEGORY_COLORS[item.category] }]} />
+            <View style={[styles.rankingDot, { backgroundColor: color }]} />
             <Text style={[styles.rankingLabel, { color: colors.foreground }]}>
-              {CATEGORY_LABELS[item.category]}
+              {label}
             </Text>
             <View style={styles.rankingBarBg}>
               <View
                 style={[
                   styles.rankingBarFill,
-                  { width: `${percent}%` as `${number}%`, backgroundColor: CATEGORY_COLORS[item.category] },
+                  { width: `${percent}%` as `${number}%`, backgroundColor: color },
                 ]}
               />
             </View>
@@ -239,7 +250,7 @@ export default function HomeScreen() {
 
   // 円グラフ + カテゴリ内訳ミニカード（ホーム用）
   const donutData = Object.entries(categoryTotals)
-    .map(([cat, total]) => ({ category: cat as Category, value: total as number }))
+    .map(([cat, total]) => ({ category: cat, value: total as number }))
     .sort((a, b) => b.value - a.value);
 
   const categoryBreakdownMiniCard = donutData.length > 0 && (
@@ -255,9 +266,9 @@ export default function HomeScreen() {
             const pct = monthlyTotal > 0 ? Math.round((item.value / monthlyTotal) * 100) : 0;
             return (
               <View key={item.category} style={styles.legendRow}>
-                <View style={[styles.legendDot, { backgroundColor: CATEGORY_COLORS[item.category] ?? "#9CA3AF" }]} />
+                <View style={[styles.legendDot, { backgroundColor: getCategoryColor(item.category) }]} />
                 <Text style={[styles.legendLabel, { color: colors.foreground }]}>
-                  {CATEGORY_LABELS[item.category] ?? item.category}
+                  {getCategoryLabel(item.category)}
                 </Text>
                 <Text style={[styles.legendPct, { color: colors.muted }]}>{pct}%</Text>
                 <Text style={[styles.legendAmt, { color: colors.foreground }]}>¥{item.value.toLocaleString()}</Text>

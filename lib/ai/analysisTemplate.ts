@@ -301,10 +301,10 @@ export function generateTemplateAnalysis(ctx: AnalysisContext): AnalysisResponse
     : TEMPLATES[TEMPLATES.length - 1];
 
   return {
-    summary: selectedTemplate.summary(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent, ctx.currentMonth),
-    goodPoints: selectedTemplate.goodPoints(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
-    warningPoints: selectedTemplate.warningPoints(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
-    suggestions: selectedTemplate.suggestions(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
+    summary: selectedTemplate.summary(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal, topCatPercent),
+    goodPoints: selectedTemplate.goodPoints(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal),
+    warningPoints: selectedTemplate.warningPoints(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal),
+    suggestions: selectedTemplate.suggestions(ctx.usagePercent, ctx.monthlyTotal, ctx.budget, savedAmount, topCatLabel, topCatTotal),
     topCategory: topCatName,
     topCategoryPercent: topCatPercent,
   };

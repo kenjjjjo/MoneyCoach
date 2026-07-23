@@ -18,39 +18,30 @@ import {
 import { ScreenContainer } from "@/components/screen-container";
 import { useColors } from "@/hooks/use-colors";
 import {
-  CATEGORY_COLORS,
-  CATEGORY_ICONS,
-  CATEGORY_LABELS,
-  type Category,
   type Expense,
   useExpenses,
 } from "@/lib/expense-context";
-
-const CATEGORIES: Category[] = [
-  "food",
-  "convenience",
-  "transport",
-  "hobby",
-  "beauty",
-  "subscription",
-  "other",
-];
 
 export default function EditExpenseScreen() {
   const colors = useColors();
   const router = useRouter();
   const params = useLocalSearchParams<{ id: string }>();
-  const { state, deleteExpense, updateExpense } = useExpenses();
+  const { state, deleteExpense, updateExpense, getAllCategories } = useExpenses();
 
   // 対象の支出を検索
   const expense = state.expenses.find((e) => e.id === params.id) as Expense | undefined;
 
   const [amount, setAmount] = useState(expense ? expense.amount.toString() : "");
-  const [selectedCategory, setSelectedCategory] = useState<Category | null>(
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(
     expense ? expense.category : null
   );
   const [memo, setMemo] = useState(expense ? expense.memo ?? "" : "");
+  const [dateStr, setDateStr] = useState(
+    expense ? expense.createdAt.split("T")[0] : new Date().toISOString().split("T")[0]
+  );
   const [error, setError] = useState("");
+
+  const categories = getAllCategories();
 
   useEffect(() => {
     if (!expense) {
@@ -82,12 +73,28 @@ export default function EditExpenseScreen() {
 
     if (!expense) return;
 
-    // 既存の支出を直接更新（元の createdAt を保持）
+    // 日付バリデーション
+    const dateParts = dateStr.split("-");
+    if (dateParts.length !== 3) {
+      setError("日付を YYYY-MM-DD 形式で入力してください");
+      return;
+    }
+    const y = parseInt(dateParts[0], 10);
+    const m = parseInt(dateParts[1], 10) - 1;
+    const d = parseInt(dateParts[2], 10);
+    const origTime = new Date(expense.createdAt);
+    const newDate = new Date(y, m, d, origTime.getHours(), origTime.getMinutes(), origTime.getSeconds());
+    if (isNaN(newDate.getTime())) {
+      setError("正しい日付を入力してください");
+      return;
+    }
+
     updateExpense({
       ...expense,
       amount: num,
       category: selectedCategory,
       memo: memo.trim() || undefined,
+      createdAt: newDate.toISOString(),
     });
 
     if (Platform.OS !== "web") {
@@ -141,6 +148,22 @@ export default function EditExpenseScreen() {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}
       >
+        {/* Date Input */}
+        <View style={styles.dateSection}>
+          <Text style={[styles.sectionLabel, { color: colors.muted }]}>日付 (YYYY-MM-DD)</Text>
+          <View style={[styles.dateInputRow, { backgroundColor: colors.surface, borderColor: colors.border }]}>
+            <MaterialIcons name="event" size={20} color={colors.muted} />
+            <TextInput
+              style={[styles.dateInput, { color: colors.foreground }]}
+              value={dateStr}
+              onChangeText={setDateStr}
+              placeholder="YYYY-MM-DD"
+              placeholderTextColor={colors.muted}
+              keyboardType="numbers-and-punctuation"
+            />
+          </View>
+        </View>
+
         {/* Amount Input */}
         <View style={styles.amountSection}>
           <Text style={[styles.sectionLabel, { color: colors.muted }]}>金額</Text>
@@ -172,16 +195,16 @@ export default function EditExpenseScreen() {
         <View style={styles.categorySection}>
           <Text style={[styles.sectionLabel, { color: colors.muted }]}>カテゴリ</Text>
           <View style={styles.categoryGrid}>
-            {CATEGORIES.map((cat) => {
-              const isSelected = selectedCategory === cat;
-              const catColor = CATEGORY_COLORS[cat];
-              const iconName = CATEGORY_ICONS[cat] as React.ComponentProps<
+            {categories.map((cat) => {
+              const isSelected = selectedCategory === cat.id;
+              const catColor = cat.color;
+              const iconName = cat.icon as React.ComponentProps<
                 typeof MaterialIcons
               >["name"];
 
               return (
                 <TouchableOpacity
-                  key={cat}
+                  key={cat.id}
                   style={[
                     styles.categoryItem,
                     {
@@ -191,7 +214,7 @@ export default function EditExpenseScreen() {
                     },
                   ]}
                   onPress={() => {
-                    setSelectedCategory(cat);
+                    setSelectedCategory(cat.id);
                     if (error) setError("");
                     if (Platform.OS !== "web") {
                       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -212,8 +235,9 @@ export default function EditExpenseScreen() {
                       styles.categoryLabel,
                       { color: isSelected ? catColor : colors.foreground },
                     ]}
+                    numberOfLines={1}
                   >
-                    {CATEGORY_LABELS[cat]}
+                    {cat.name}
                   </Text>
                 </TouchableOpacity>
               );
@@ -312,6 +336,23 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: "500",
     marginBottom: 8,
+  },
+  dateSection: {
+    gap: 4,
+  },
+  dateInputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
+  dateInput: {
+    flex: 1,
+    fontSize: 15,
+    fontWeight: "500",
   },
   amountSection: {
     gap: 4,

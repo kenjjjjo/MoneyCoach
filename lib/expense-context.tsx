@@ -1,6 +1,13 @@
 import { storage } from "./storage";
 import React, { createContext, useCallback, useContext, useEffect, useReducer } from "react";
 
+export type CustomCategory = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+};
+
 export type Category =
   | "food"
   | "convenience"
@@ -8,7 +15,8 @@ export type Category =
   | "hobby"
   | "beauty"
   | "subscription"
-  | "other";
+  | "other"
+  | (string & {});
 
 export type Expense = {
   id: string;
@@ -75,7 +83,7 @@ export type MonthlyReport = {
   createdAt: string;
 };
 
-export const CATEGORY_LABELS: Record<Category, string> = {
+export const CATEGORY_LABELS: Record<string, string> = {
   food: "食費",
   convenience: "コンビニ",
   transport: "交通費",
@@ -85,7 +93,7 @@ export const CATEGORY_LABELS: Record<Category, string> = {
   other: "その他",
 };
 
-export const CATEGORY_COLORS: Record<Category, string> = {
+export const CATEGORY_COLORS: Record<string, string> = {
   food: "#22C55E",
   convenience: "#F59E0B",
   transport: "#3B82F6",
@@ -95,7 +103,7 @@ export const CATEGORY_COLORS: Record<Category, string> = {
   other: "#94A3B8",
 };
 
-export const CATEGORY_ICONS: Record<Category, string> = {
+export const CATEGORY_ICONS: Record<string, string> = {
   food: "restaurant",
   convenience: "store",
   transport: "train",
@@ -113,6 +121,7 @@ type State = {
   monthlyReports: MonthlyReport[];
   recurringExpenses: RecurringExpense[];
   autoChargedMonths: string[]; // 自動計上済みの月キー一覧
+  customCategories: CustomCategory[];
 };
 
 type Action =
@@ -127,7 +136,9 @@ type Action =
   | { type: "ADD_RECURRING"; recurring: RecurringExpense }
   | { type: "UPDATE_RECURRING"; recurring: RecurringExpense }
   | { type: "DELETE_RECURRING"; id: string }
-  | { type: "MARK_AUTO_CHARGED"; monthKey: string };
+  | { type: "MARK_AUTO_CHARGED"; monthKey: string }
+  | { type: "ADD_CUSTOM_CATEGORY"; category: CustomCategory }
+  | { type: "DELETE_CUSTOM_CATEGORY"; id: string };
 
 const STORAGE_KEY = "money_coach_data_v30";
 const DEFAULT_BUDGET = 50000;
@@ -195,6 +206,16 @@ function reducer(state: State, action: Action): State {
         ...state,
         autoChargedMonths: [...state.autoChargedMonths.filter((m) => m !== action.monthKey), action.monthKey],
       };
+    case "ADD_CUSTOM_CATEGORY":
+      return {
+        ...state,
+        customCategories: [...state.customCategories, action.category],
+      };
+    case "DELETE_CUSTOM_CATEGORY":
+      return {
+        ...state,
+        customCategories: state.customCategories.filter((c) => c.id !== action.id),
+      };
     default:
       return state;
   }
@@ -206,7 +227,7 @@ type ExpenseContextType = {
   deleteRecurring: (id: string) => void;
   getRecurringTotal: () => number;
   state: State;
-  addExpense: (expense: Omit<Expense, "id" | "createdAt">) => void;
+  addExpense: (expense: Omit<Expense, "id" | "createdAt"> & { createdAt?: string }) => void;
   updateExpense: (expense: Expense) => void;
   deleteExpense: (id: string) => void;
   setBudget: (amount: number) => void;
@@ -224,6 +245,12 @@ type ExpenseContextType = {
   getLatestMonthlyReport: () => MonthlyReport | null;
   calculateScore: (month: string) => number;
   getInsights: (month: string) => string[];
+  getCategoryLabel: (category: string) => string;
+  getCategoryColor: (category: string) => string;
+  getCategoryIcon: (category: string) => string;
+  getAllCategories: () => { id: string; name: string; icon: string; color: string; isCustom?: boolean }[];
+  addCustomCategory: (category: Omit<CustomCategory, "id">) => void;
+  deleteCustomCategory: (id: string) => void;
 };
 
 const ExpenseContext = createContext<ExpenseContextType | null>(null);
@@ -304,8 +331,9 @@ function generateInsights(expenses: Expense[], budget: number, monthlyTotal: num
   const topCategory = Object.entries(categoryTotals).sort(([, a], [, b]) => (b as number) - (a as number))[0];
   if (topCategory && monthlyTotal > 0) {
     const ratio = Math.round(((topCategory[1] as number) / monthlyTotal) * 100);
+    const catLabel = CATEGORY_LABELS[topCategory[0]] || topCategory[0];
     if (ratio >= 30) {
-      insights.push(`${CATEGORY_LABELS[topCategory[0] as Category]}が支出の${ratio}%を占めています`);
+      insights.push(`${catLabel}が支出の${ratio}%を占めています`);
     }
   }
 
@@ -335,6 +363,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
     monthlyReports: [],
     recurringExpenses: [],
     autoChargedMonths: [],
+    customCategories: [],
   });
 
   // Load from storage (or IndexedDB on Web) on mount
@@ -357,6 +386,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
               monthlyReports: parsed.monthlyReports || [],
               recurringExpenses: parsed.recurringExpenses || [],
               autoChargedMonths: parsed.autoChargedMonths || [],
+              customCategories: parsed.customCategories || [],
             },
           });
         } catch {
@@ -380,6 +410,7 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
                 monthlyReports: [],
                 recurringExpenses: [],
                 autoChargedMonths: [],
+                customCategories: [],
               },
             });
           }
@@ -395,11 +426,11 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
     storage.setItem(STORAGE_KEY, JSON.stringify(state));
   }, [state]);
 
-  const addExpense = useCallback((expense: Omit<Expense, "id" | "createdAt">) => {
+  const addExpense = useCallback((expense: Omit<Expense, "id" | "createdAt"> & { createdAt?: string }) => {
     const newExpense: Expense = {
       ...expense,
       id: Date.now().toString(),
-      createdAt: new Date().toISOString(),
+      createdAt: expense.createdAt || new Date().toISOString(),
     };
     dispatch({ type: "ADD_EXPENSE", expense: newExpense });
   }, []);
@@ -492,6 +523,65 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
     [state.expenses, state.monthlyBudget]
   );
 
+  const getCategoryLabel = useCallback(
+    (category: string): string => {
+      if (CATEGORY_LABELS[category]) return CATEGORY_LABELS[category];
+      const custom = state.customCategories.find((c) => c.id === category);
+      return custom ? custom.name : category;
+    },
+    [state.customCategories]
+  );
+
+  const getCategoryColor = useCallback(
+    (category: string): string => {
+      if (CATEGORY_COLORS[category]) return CATEGORY_COLORS[category];
+      const custom = state.customCategories.find((c) => c.id === category);
+      return custom ? custom.color : "#94A3B8";
+    },
+    [state.customCategories]
+  );
+
+  const getCategoryIcon = useCallback(
+    (category: string): string => {
+      if (CATEGORY_ICONS[category]) return CATEGORY_ICONS[category];
+      const custom = state.customCategories.find((c) => c.id === category);
+      return custom ? custom.icon : "category";
+    },
+    [state.customCategories]
+  );
+
+  const getAllCategories = useCallback(() => {
+    const defaultCats = [
+      { id: "food", name: "食費", icon: "restaurant", color: "#22C55E" },
+      { id: "convenience", name: "コンビニ", icon: "store", color: "#F59E0B" },
+      { id: "transport", name: "交通費", icon: "train", color: "#3B82F6" },
+      { id: "hobby", name: "趣味", icon: "sports-esports", color: "#8B5CF6" },
+      { id: "beauty", name: "美容", icon: "favorite", color: "#EC4899" },
+      { id: "subscription", name: "サブスク", icon: "credit-card", color: "#06B6D4" },
+      { id: "other", name: "その他", icon: "more-horiz", color: "#94A3B8" },
+    ];
+    const customCats = state.customCategories.map((c) => ({
+      id: c.id,
+      name: c.name,
+      icon: c.icon,
+      color: c.color,
+      isCustom: true,
+    }));
+    return [...defaultCats, ...customCats];
+  }, [state.customCategories]);
+
+  const addCustomCategory = useCallback((cat: Omit<CustomCategory, "id">) => {
+    const newCat: CustomCategory = {
+      ...cat,
+      id: `custom_${Date.now()}`,
+    };
+    dispatch({ type: "ADD_CUSTOM_CATEGORY", category: newCat });
+  }, []);
+
+  const deleteCustomCategory = useCallback((id: string) => {
+    dispatch({ type: "DELETE_CUSTOM_CATEGORY", id });
+  }, []);
+
   // 定期支出CRUD
   const addRecurring = useCallback((recurring: Omit<RecurringExpense, "id" | "createdAt">) => {
     const newRecurring: RecurringExpense = {
@@ -580,6 +670,12 @@ export function ExpenseProvider({ children }: { children: React.ReactNode }) {
         getLatestMonthlyReport,
         calculateScore,
         getInsights,
+        getCategoryLabel,
+        getCategoryColor,
+        getCategoryIcon,
+        getAllCategories,
+        addCustomCategory,
+        deleteCustomCategory,
         addRecurring,
         updateRecurring,
         deleteRecurring,

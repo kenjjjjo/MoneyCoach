@@ -1,0 +1,10 @@
+services:
+  - type: web
+    name: money-coach
+    env: node
+    plan: free
+    buildCommand: pnpm install --frozen-lockfile || npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production

@@ -41,7 +41,7 @@ function WeeklyReportView({
 }: {
   colors: ReturnType<typeof useColors>;
 }) {
-  const { state, getMonthlyExpenses, getCurrentMonthKey, calculateScore } = useExpenses();
+  const { state, getMonthlyExpenses, getCurrentMonthKey, calculateScore, getCategoryLabel, getCategoryColor } = useExpenses();
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<string | null>(null);
 
@@ -127,9 +127,9 @@ function WeeklyReportView({
           <Text style={[styles.reportCardTitle, { color: colors.foreground }]}>カテゴリ別支出</Text>
           {catBreakdown.map((item) => (
             <View key={item.category} style={styles.catRow}>
-              <View style={[styles.catDot, { backgroundColor: CATEGORY_COLORS[item.category] }]} />
+              <View style={[styles.catDot, { backgroundColor: getCategoryColor(item.category) }]} />
               <Text style={[styles.catLabel, { color: colors.foreground }]}>
-                {CATEGORY_LABELS[item.category]}
+                {getCategoryLabel(item.category)}
               </Text>
               <View style={[styles.catBarWrap, { backgroundColor: colors.border }]}>
                 <View
@@ -137,7 +137,7 @@ function WeeklyReportView({
                     styles.catBarFill,
                     {
                       width: `${weekTotal > 0 ? Math.round((item.total / weekTotal) * 100) : 0}%` as any,
-                      backgroundColor: CATEGORY_COLORS[item.category],
+                      backgroundColor: getCategoryColor(item.category),
                     },
                   ]}
                 />
@@ -189,7 +189,7 @@ function MonthlyReportView({
 }: {
   colors: ReturnType<typeof useColors>;
 }) {
-  const { state, getMonthlyExpenses, getCurrentMonthKey, calculateScore } = useExpenses();
+  const { state, getMonthlyExpenses, getCurrentMonthKey, calculateScore, getCategoryLabel, getCategoryColor } = useExpenses();
   const [isLoading, setIsLoading] = useState(false);
   const [report, setReport] = useState<string | null>(null);
 
@@ -279,9 +279,9 @@ function MonthlyReportView({
           <Text style={[styles.reportCardTitle, { color: colors.foreground }]}>カテゴリ別支出</Text>
           {catBreakdown.map((item) => (
             <View key={item.category} style={styles.catRow}>
-              <View style={[styles.catDot, { backgroundColor: CATEGORY_COLORS[item.category] }]} />
+              <View style={[styles.catDot, { backgroundColor: getCategoryColor(item.category) }]} />
               <Text style={[styles.catLabel, { color: colors.foreground }]}>
-                {CATEGORY_LABELS[item.category]}
+                {getCategoryLabel(item.category)}
               </Text>
               <View style={[styles.catBarWrap, { backgroundColor: colors.border }]}>
                 <View
@@ -289,7 +289,7 @@ function MonthlyReportView({
                     styles.catBarFill,
                     {
                       width: `${monthlyTotal > 0 ? Math.round((item.total / monthlyTotal) * 100) : 0}%` as any,
-                      backgroundColor: CATEGORY_COLORS[item.category],
+                      backgroundColor: getCategoryColor(item.category),
                     },
                   ]}
                 />
@@ -340,7 +340,7 @@ export default function CoachScreen() {
   const colors = useColors();
   // Web環境でキーボード回避ビューが入力欄を画面外へ追いやるバグを防ぐため、Web時は通常のViewを使用
   const ChatContainer = Platform.OS === "web" ? View : KeyboardAvoidingView;
-  const { state, getMonthlyExpenses, getMonthlyTotal, getCurrentMonthKey } = useExpenses();
+  const { state, getMonthlyExpenses, getMonthlyTotal, getCurrentMonthKey, getCategoryLabel, getCategoryColor } = useExpenses();
   const [tabMode, setTabMode] = useState<TabMode>("chat");
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -449,7 +449,7 @@ export default function CoachScreen() {
         const assistantMessage: Message = {
           id: (Date.now() + 1).toString(),
           role: "assistant",
-          content: result.reply,
+          content: typeof result.reply === "string" ? result.reply : JSON.stringify(result.reply),
         };
 
         setMessages((prev) => [...prev, assistantMessage]);

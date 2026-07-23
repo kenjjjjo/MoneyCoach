@@ -35,8 +35,9 @@ const CATEGORIES: Category[] = [
 const BILLING_DAYS = [1, 5, 10, 15, 20, 25, 28];
 
 export default function AddRecurringExpenseScreen() {
-  const { addRecurring, updateRecurring, state } = useExpenses();
+  const { addRecurring, updateRecurring, state, getAllCategories } = useExpenses();
   const params = useLocalSearchParams<{ editId?: string }>();
+  const categories = getAllCategories();
 
   // 編集モードの場合、既存データを取得
   const editTarget = params.editId
@@ -47,7 +48,7 @@ export default function AddRecurringExpenseScreen() {
   const [amountText, setAmountText] = useState(
     editTarget ? String(editTarget.amount) : ""
   );
-  const [category, setCategory] = useState<Category>(
+  const [category, setCategory] = useState<string>(
     editTarget?.category ?? "subscription"
   );
   const [billingDay, setBillingDay] = useState(editTarget?.billingDay ?? 1);
@@ -147,37 +148,38 @@ export default function AddRecurringExpenseScreen() {
           {/* カテゴリ */}
           <Text style={styles.label}>カテゴリ</Text>
           <View style={styles.categoryGrid}>
-            {CATEGORIES.map((cat) => {
-              const selected = category === cat;
+            {categories.map((cat) => {
+              const selected = category === cat.id;
               return (
                 <Pressable
-                  key={cat}
-                  onPress={() => setCategory(cat)}
+                  key={cat.id}
+                  onPress={() => setCategory(cat.id)}
                   style={({ pressed }) => [
                     styles.categoryItem,
-                    selected && { backgroundColor: CATEGORY_COLORS[cat] + "22", borderColor: CATEGORY_COLORS[cat] },
-                    pressed && { opacity: 0.7 },
+                    selected && { borderColor: cat.color, backgroundColor: cat.color + "11" },
+                    pressed && { opacity: 0.8 },
                   ]}
                 >
                   <View
                     style={[
                       styles.categoryIconBg,
-                      { backgroundColor: selected ? CATEGORY_COLORS[cat] + "33" : "#F3F4F6" },
+                      { backgroundColor: selected ? cat.color + "33" : "#F3F4F6" },
                     ]}
                   >
                     <MaterialIcons
-                      name={CATEGORY_ICONS[cat] as any}
+                      name={cat.icon as any}
                       size={22}
-                      color={selected ? CATEGORY_COLORS[cat] : "#6B7280"}
+                      color={selected ? cat.color : "#6B7280"}
                     />
                   </View>
                   <Text
                     style={[
                       styles.categoryLabel,
-                      selected && { color: CATEGORY_COLORS[cat], fontWeight: "700" },
+                      selected && { color: cat.color, fontWeight: "700" },
                     ]}
+                    numberOfLines={1}
                   >
-                    {CATEGORY_LABELS[cat]}
+                    {cat.name}
                   </Text>
                 </Pressable>
               );
