@@ -86,14 +86,18 @@ async function startServer() {
     res.sendFile(path.join(publicHtmlPath, "index.html"));
   });
 
+  // On cloud platforms (Render, etc.), PORT is assigned by the platform and must be used directly.
+  // Only use port-scanning in local development when PORT is not set.
   const preferredPort = parseInt(process.env.PORT || "3000");
-  const port = await findAvailablePort(preferredPort);
+  const port = process.env.PORT
+    ? preferredPort
+    : await findAvailablePort(preferredPort);
 
-  if (port !== preferredPort) {
+  if (!process.env.PORT && port !== preferredPort) {
     console.log(`Port ${preferredPort} is busy, using port ${port} instead`);
   }
 
-  server.listen(port, () => {
+  server.listen(port, "0.0.0.0", () => {
     console.log(`[api] server listening on port ${port}`);
   });
 }

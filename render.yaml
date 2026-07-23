@@ -3,8 +3,10 @@ services:
     name: money-coach
     env: node
     plan: free
-    buildCommand: pnpm install --frozen-lockfile || npm install && npm run build
-    startCommand: npm start
+    buildCommand: npm install && npm run build
+    startCommand: node dist/index.js
     envVars:
       - key: NODE_ENV
         value: production
+      - key: PORT
+        value: 10000
